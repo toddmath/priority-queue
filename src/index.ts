@@ -7,7 +7,7 @@ export type PriorityQueueParams<T> = {
 
 type Maybe<T> = T | null;
 
-export class PriorityQueue<T> {
+export class PriorityQueue<T = unknown> {
   private values: T[] = [];
   private comparatorFn: ComparatorFn<T>;
   private length = 0;
@@ -26,7 +26,9 @@ export class PriorityQueue<T> {
   }
 
   extend(values: T[]): void {
-    for (const value of values) this.insert(value);
+    for (const value of values) {
+      this.insert(value);
+    }
   }
 
   remove(): Maybe<T> {
@@ -48,7 +50,9 @@ export class PriorityQueue<T> {
   }
 
   heapSort(): Maybe<T>[] {
-    return Array.from({ length: this.length }, () => this.remove());
+    return Array.from({ length: this.length }, () => this.remove()).filter(
+      Boolean
+    );
   }
 
   private parent(index: number): Maybe<number> {
@@ -63,6 +67,10 @@ export class PriorityQueue<T> {
   private rightChild(index: number): Maybe<number> {
     const child = index * 2 + 2;
     return child >= this.length ? null : child;
+  }
+
+  private children(index: number): readonly [Maybe<number>, Maybe<number>] {
+    return [this.leftChild(index), this.rightChild(index)] as const;
   }
 
   private bubbleUp(): void {
@@ -89,21 +97,20 @@ export class PriorityQueue<T> {
   private bubbleDown(): void {
     let index = 0;
 
-    while (true) {
-      const [left, right] = [this.leftChild(index), this.rightChild(index)];
-      let swapCandidate = index;
+    const createComp = (cand: T) => {
+      return (other: T) => this.comparatorFn(cand, other) > 0;
+    };
 
-      if (
-        left !== null &&
-        this.comparatorFn(this.values[swapCandidate], this.values[left]) > 0
-      ) {
+    while (true) {
+      const [left, right] = this.children(index);
+      let swapCandidate = index;
+      const isCandidate = createComp(this.values[swapCandidate]);
+
+      if (left && isCandidate(this.values[left])) {
         swapCandidate = left;
       }
 
-      if (
-        right !== null &&
-        this.comparatorFn(this.values[swapCandidate], this.values[right]) > 0
-      ) {
+      if (right && isCandidate(this.values[right])) {
         swapCandidate = right;
       }
 
@@ -117,5 +124,9 @@ export class PriorityQueue<T> {
 
       return;
     }
+  }
+
+  toString(): string {
+    return this.values.filter(Boolean).toString();
   }
 }
